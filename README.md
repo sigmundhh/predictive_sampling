@@ -7,6 +7,9 @@ Using the cart pole environment from this [repo](https://github.com/0xangelo/gym
 
 The script shows the environment along with the predicted trajectories:
 
+<img width="600" alt="env_screenshot" src="https://user-images.githubusercontent.com/42750085/218702243-111f4403-c79f-405b-890b-60869fcfc2b3.png">
+
+![mpc_plot](https://user-images.githubusercontent.com/42750085/218702286-6233459e-03e5-4986-834b-5e99b18a9f57.png)
 
 ### Remaining challenges
 There are a number of things that inhibit control:
