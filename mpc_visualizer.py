@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
-from predictive_sampling import predictiveSampler
+from predictive_sampling import PredictiveSampler
 
 class MPCVisualizer:
     def __init__(self, mpc):
@@ -34,7 +34,7 @@ class MPCVisualizer:
     
 
 if __name__ == "__main__":
-    mpc = predictiveSampler(horizon=1000, dt=0.001, sample_variance=10)
+    mpc = PredictiveSampler(horizon=1000, dt=0.001, sample_variance=10)
     mpc_visualizer = MPCVisualizer(mpc)
     state = np.array([0, 0, np.pi - 0.25, 0])
     # Convert to [x_pos, x_dot, np.cos(theta), np.sin(theta), theta_dot]

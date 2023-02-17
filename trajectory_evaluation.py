@@ -1,6 +1,6 @@
 import numpy as np
 
-class trajectoryEvaluator:
+class TrajectoryEvaluator:
     def __init__(self):
         R = 1
 
@@ -8,13 +8,13 @@ class trajectoryEvaluator:
         """
         Stage cost for a pendulum swing-up problem
         xi = [pos, pos_dot, theta, theta_dot]
-        Want to have theta = pi and standing still
+        Want to have theta = 0 and standing still
+        Note that every multiple of 2p is also allowed, so we want cos(theta) = 1
         We also want to have the cart not moving too far
-        J(xi) = 1/2 * (theta)^2 + 1/2 * theta_dot^2 + 1/2 * x^2
+        J(xi) = (cos(theta)-1) + 1/2 * theta_dot^2 + 1/2 * x^2
         """
-        #return 0.5 * (np.cos(x[2])+1)**2 + 0.5 * x[3]**2 + 0.5 * x[0]**2
+        return (1-np.cos(x[2]))
         #return 0.5 * (x[0]-1)**2 # position control for testing
-        return 0
     
     def terminal_cost(self, x, u):
         """
@@ -23,7 +23,7 @@ class trajectoryEvaluator:
             x : shape (state_dim)
             u : 1
         """
-        return 0.5 * (np.cos(x[2])+1)**2 + 0.5 * x[3]**2 + 0.5 * x[0]**2
+        #return 0.5 * (np.cos(x[2])+1)**2 + 0.5 * x[3]**2 + 0.5 * x[0]**2
         #return 0.5 * (np.cos(x[2])+1)**2
         #return 0.5 * (x[0]-1)**2 + 0.5 * x[1]**2 # position control for testing
         return 0
@@ -33,7 +33,7 @@ class trajectoryEvaluator:
         Total trajectory cost for a pendulum swing-up problem
         """
         total_cost = 0
-        for i in range(xs.shape[1]):    # (N,4)
+        for i in range(xs.shape[0]):    # (H,4)
             total_cost += self.stage_cost(xs[i, :], us[i])
         total_cost += self.terminal_cost(xs[-1, :], us[-1]) # I know, the last step has stage + terminal
         return total_cost
@@ -41,6 +41,9 @@ class trajectoryEvaluator:
     def evaluate_trajectories(self, state_trajs, control_trajs):
         """
         Evaluate a set of trajectories
+        Args:
+            state_trajs (np.array) : (N, H, state_dim)
+            control_trajs (np.array) : (N, H, 1)
         """
         costs = np.zeros(state_trajs.shape[0])
         for i in range(state_trajs.shape[0]):
@@ -57,7 +60,7 @@ if __name__ == "__main__":
     # Test the stage cost
     x = np.array([0, 0, np.pi - 0.25, 0])
     u = np.array([0])
-    evaluator = trajectoryEvaluator()
+    evaluator = TrajectoryEvaluator()
     print(evaluator.stage_cost(x, u))
 
     # Test the total trajectory cost
