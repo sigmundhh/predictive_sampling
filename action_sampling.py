@@ -7,26 +7,33 @@ class ActionSampler:
         Args:
             horizon (int): The number of time steps to sample actions for.
             variance (float): The variance of the gaussian distribution.
-            mean (torch.tensor): The mean of the gaussian distribution. Shape: (horizon,)."""
+            mean (torch.tensor): The mean of the gaussian distribution. Shape: (horizon,).
+        """
         self.horizon = horizon
-        # Parameters for an n-dimensional gaussian
         if mean is None:
             mu = torch.zeros(horizon)
         else:
             mu = mean
         sigma = torch.eye(horizon) * variance
-        # Create a gaussian we can sample
         self.distr = torch.distributions.MultivariateNormal(mu, sigma)
 
     def sample(self):
-        # Sample from the gaussian
-        # Clamp the action to be between -1 and 1
+        """Sample a single action from the gaussian distribution.
+        The action is clamped to be between -1 and 1.
+        Returns:
+            torch.tensor: A single action sampled from the gaussian distribution. Shape: (horizon,).
+        """
         return torch.clamp(self.distr.sample(), -1, 1)
 
     def sample_batch(self, batch_size):
-        # Sample from the gaussian
-        # Always want to include the mean as a sample
-        # so we can use it as a baseline
+        """
+        Sample a batch of actions from the gaussian distribution.
+        The action is clamped to be between -1 and 1.
+        Args:
+            batch_size (int): The number of actions to sample.
+        Returns:
+            torch.tensor: A batch of actions sampled from the gaussian distribution. Shape: (batch_size, horizon).
+        """
 
         if batch_size == 1:
             # If we only want one sample, just return the mean
@@ -34,7 +41,6 @@ class ActionSampler:
         else:
             # If we want more than one sample, return the mean
             # and then sample the rest
-            # need to clamp
             return torch.cat(
                 (
                     self.distr.loc.unsqueeze(0),
@@ -43,10 +49,11 @@ class ActionSampler:
             )
 
     def update_mu(self, mu, shift=True):
-        # Update the mean of the gaussian
-        # To incorporate that the first action of mu is already done,
-        # we just want to sample using the last N-1
-        # and appending a 0 to the end of the mean
+        """Update the mean of the gaussian distribution.
+        Args:
+            mu (torch.tensor): The new mean of the gaussian distribution. Shape: (horizon,).
+            shift (bool, optional): Whether to shift the mean. Defaults to True.
+        """
         if shift:
             self.distr.loc = torch.cat((mu[1:], torch.zeros(1)))
         else:

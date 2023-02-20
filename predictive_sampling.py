@@ -17,7 +17,10 @@ class PredictiveSampler:
             horizon (int): The number of time steps to sample actions for.
             dt (float): The time step size.
             sample_variance (float): The variance of the gaussian distribution.
-            mean (torch.tensor): The mean of the gaussian distribution. Shape: (horizon,)."""
+            mean (torch.tensor): The mean of the gaussian distribution. Shape: (horizon,).
+            sample_count (int): The number of trajectories to sample.
+            shift (bool, optional): Whether to shift the mean. Defaults to True.
+        """
         self.horizon = horizon
         self.dt = dt
         self.action_sampler = ActionSampler(horizon, sample_variance, mean=mean)
@@ -30,18 +33,27 @@ class PredictiveSampler:
         self.shift = shift
 
     def predict(self, state):
+        """Predict the best action to take.
+        Args:
+            state (np.array): The current state of the environment. Shape: (4,).
+        Returns:
+            np.array: The best action to take. Shape: (horizon,).
+        """
         ## Sample a batch of actions
         self.action_trajs = self.action_sampler.sample_batch(
             self.N_trajs
         )  # (N_trajs, horizon)
+
         ## Integrate the actions
         self.states = self.integrator.integrate_trajs(
             self.action_trajs, self.convert_state(state)
         )  # (N_trajs, horizon, 4)
+
         ## Evaluate the trajectories
         self.best_actions, self.best_index = self.evaluator.find_best_control(
             self.states, self.action_trajs
         )  # (N_trajs,)
+
         ## Update the sampling distribution mean
         self.action_sampler.update_mu(self.best_actions, shift=self.shift)
         return self.best_actions
@@ -49,14 +61,22 @@ class PredictiveSampler:
     def convert_state(self, state):
         """Converting from [x_pos, x_dot, np.cos(theta), np.sin(theta), theta_dot]
         to [pos, pos_dot, theta_tilde, theta_dot]
-        Now, theta is 0 when straight up, and positive counter-clockwise."""
+        Now, theta is 0 when straight up, and positive counter-clockwise.
+
+        Args:
+            state (np.array): The current state of the environment. Shape: (4,).
+        Returns:
+            np.array: The converted state. Shape: (4,).
+        """
         theta = np.arctan2(state[3], state[2])
         return np.array([state[0], state[1], theta, state[4]])
 
 
+### Testing
+
 def test_trajectory_ranking():
     """Test that the trajectory ranking picks out the trajectory with the lowest cost."""
-    # For this experiment, remember to sett shift = False in the update_mu function
+    # For this experiment, remember to set shift = False in the update_mu function
     predictive_sampler = PredictiveSampler(horizon=1000, dt=0.01)
     state = np.array(
         [0.0, 0.0, np.pi, 0.0]
@@ -136,7 +156,8 @@ def test_convergence():
     plt.show()
 
 def test_convergence_cost():
-    """Want to create a plot showing the cost over iterations"""
+    """Want to create a plot showing the cost over iterations
+    Note: mean shifting should be set to false in this experiment, as the state doesn't change."""
 
     plt.figure()
     ### BASELINE ###
