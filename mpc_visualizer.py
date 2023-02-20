@@ -5,11 +5,12 @@ from matplotlib import animation
 from predictive_sampling import PredictiveSampler
 
 class MPCVisualizer:
-    def __init__(self, mpc):
-        self.mpc = mpc
+    def __init__(self, predictive_sampler):
+        self.predictive_sampler = predictive_sampler
         self.fig = plt.figure()
+        plt.ion()
         # Set the axis limits to [0, horizon]
-        self.ax = plt.axes(xlim=(0, self.mpc.horizon), ylim=(-np.pi, np.pi))
+        #self.ax = plt.axes(xlim=(0, self.predictive_sampler.horizon), ylim=(-np.pi, np.pi))
         #self.line, = self.ax.plot(mpc.states[0, :, 2])
 
 
@@ -20,28 +21,34 @@ class MPCVisualizer:
         Each state is on the form [pos, pos_dot, theta, theta_dot]
         """
         plt.clf()
-        # Add all trajecories to the line
-        for i in range(self.mpc.N_trajs):
-            plt.plot(self.mpc.states[i, :, 2])
-        
-        plt.pause(0.0001)
+        for i in range (self.predictive_sampler.states.shape[0]):
+            if i == self.predictive_sampler.best_index:
+                plt.plot(self.predictive_sampler.states[i,:,2], c='r')
+            else:
+                plt.plot(self.predictive_sampler.states[i,:,2], c='b', alpha=0.1)
+
+        plt.title("Predicted theta trajectory")
+        plt.xlabel("Time step")
+        plt.ylabel("Theta")
+        plt.pause(0.001)
+
 
     def update_plot(self):
-        self.line.set_ydata(mpc.states[0, :, 2])
+        self.line.set_ydata(predictive_sampler.states[0, :, 2])
         print("updated plot!")
         return self.line,
 
     
 
 if __name__ == "__main__":
-    mpc = PredictiveSampler(horizon=1000, dt=0.001, sample_variance=10)
-    mpc_visualizer = MPCVisualizer(mpc)
+    predictive_sampler = PredictiveSampler(horizon=500, dt=0.01, sample_variance=0.1, shift=False)
+    predictive_sampler_visualizer = MPCVisualizer(predictive_sampler)
     state = np.array([0, 0, np.pi - 0.25, 0])
     # Convert to [x_pos, x_dot, np.cos(theta), np.sin(theta), theta_dot]
     state_cartpole = np.array([state[0], state[1], np.cos(state[2]), np.sin(state[2]), state[3]])
     for i in range(100):
-        best_actions = mpc.predict(state_cartpole)
-        mpc_visualizer.visualize_theta_trajs()
-    plt.show()
+        best_actions = predictive_sampler.predict(state_cartpole)
+        predictive_sampler_visualizer.visualize_theta_trajs()
+        
 
 

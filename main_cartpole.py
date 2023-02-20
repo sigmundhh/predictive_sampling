@@ -25,7 +25,7 @@ env.render()
 #env.state = new_state
 #env.render()
 # Logging state for a small siVil 
-sim_steps = 100
+sim_steps = 2000
 poss = np.zeros(sim_steps)
 pos_dots = np.zeros(sim_steps)
 thetas = np.zeros(sim_steps)
@@ -35,7 +35,7 @@ theta_dots = np.zeros(sim_steps)
 #plt.ion()
 for i in range(thetas.shape[0]):
     action = predictive_sampler.predict(obs)
-    action = 1.0
+    #action = 1.0
     obs, rew, done, info = env.step(action)
     poss[i], pos_dots[i], thetas[i], theta_dots[i] = predictive_sampler.convert_state(obs)
     env.render()

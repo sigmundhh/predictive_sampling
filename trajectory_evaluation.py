@@ -13,7 +13,7 @@ class TrajectoryEvaluator:
         We also want to have the cart not moving too far
         J(xi) = (cos(theta)-1) + 1/2 * theta_dot^2 + 1/2 * x^2
         """
-        return (1-np.cos(x[2]))
+        return (1-np.cos(x[2])) + 0.5 * x[0]**2
         #return 0.5 * (x[0]-1)**2 # position control for testing
     
     def terminal_cost(self, x, u):

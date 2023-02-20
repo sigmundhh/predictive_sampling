@@ -11,7 +11,7 @@ class PredictiveSampler:
     A predictive sampling algorithm for the cartpole-environment.
     """
 
-    def __init__(self, horizon, dt, sample_variance=0.1, mean=None, sample_count=10):
+    def __init__(self, horizon, dt, sample_variance=0.1, mean=None, sample_count=10, shift=True):
         """Initialize the predictive sampler.
         Args:
             horizon (int): The number of time steps to sample actions for.
@@ -27,6 +27,7 @@ class PredictiveSampler:
         self.states = np.zeros(
             (self.N_trajs, self.horizon, self.integrator.x0.shape[0])
         )
+        self.shift = shift
 
     def predict(self, state):
         ## Sample a batch of actions
@@ -42,7 +43,7 @@ class PredictiveSampler:
             self.states, self.action_trajs
         )  # (N_trajs,)
         ## Update the sampling distribution mean
-        self.action_sampler.update_mu(self.best_actions, shift=False)
+        self.action_sampler.update_mu(self.best_actions, shift=self.shift)
         return self.best_actions
 
     def convert_state(self, state):
