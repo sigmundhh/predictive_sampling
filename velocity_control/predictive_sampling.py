@@ -1,9 +1,13 @@
 from action_sampling import ActionSampler
-from numerical_integration import explicitIntegrator
-from trajectory_evaluation import TrajectoryEvaluator
+from explicit_integrator_velocity import ExplicitIntegrator
+from trajectory_evaluator import TrajectoryEvaluator
 import matplotlib.pyplot as plt
 from matplotlib import animation
 import numpy as np
+from collections import namedtuple
+
+# Define a named tuple to store the state of the cartpole
+#State = namedtuple("State", ["x_pos", "x_dot", "theta", "theta_dot"])
 
 
 class PredictiveSampler:
@@ -24,12 +28,10 @@ class PredictiveSampler:
         self.horizon = horizon
         self.dt = dt
         self.action_sampler = ActionSampler(horizon, sample_variance, mean=mean)
-        self.integrator = explicitIntegrator(horizon, dt)
+        self.integrator = ExplicitIntegrator(horizon, dt)
         self.evaluator = TrajectoryEvaluator()
         self.N_trajs = sample_count
-        self.states = np.zeros(
-            (self.N_trajs, self.horizon, self.integrator.x0.shape[0])
-        )
+        self.states = []
         self.shift = shift
 
     def predict(self, state):
@@ -46,7 +48,7 @@ class PredictiveSampler:
 
         ## Integrate the actions
         self.states = self.integrator.integrate_trajs(
-            self.action_trajs, self.convert_state(state)
+            self.action_trajs, state
         )  # (N_trajs, horizon, 4)
 
         ## Evaluate the trajectories
@@ -58,18 +60,6 @@ class PredictiveSampler:
         self.action_sampler.update_mu(self.best_actions, shift=self.shift)
         return self.best_actions
 
-    def convert_state(self, state):
-        """Converting from [x_pos, x_dot, np.cos(theta), np.sin(theta), theta_dot]
-        to [pos, pos_dot, theta_tilde, theta_dot]
-        Now, theta is 0 when straight up, and positive counter-clockwise.
-
-        Args:
-            state (np.array): The current state of the environment. Shape: (4,).
-        Returns:
-            np.array: The converted state. Shape: (4,).
-        """
-        theta = np.arctan2(state[3], state[2])
-        return np.array([state[0], state[1], theta, state[4]])
 
 
 ### Testing
@@ -164,66 +154,20 @@ def test_convergence_cost():
     state = np.array(
         [0.0, 0.0, np.pi, 0.0]
     )  # [x_pos,.0 x_dot, theta, theta_dot] in env state space, pendulum straight up
-    # Convert to [pos, pos_dot, np.cos(theta), np.sin(theta), theta_dot]
-    state_cartpole = np.array(
-        [state[0], state[1], np.cos(state[2]), np.sin(state[2]), state[3]]
-    )  # in env state space
-    iterations = 300
+    iterations = 100
     # Plot the the theta trajectory at each iteration
     costs = []
     for i in range(iterations):
-        predictive_sampler.predict(state_cartpole)
+        predictive_sampler.predict(state)
         states = predictive_sampler.states[predictive_sampler.best_index]
         actions = predictive_sampler.action_trajs[predictive_sampler.best_index]
         cost = predictive_sampler.evaluator.total_trajectory_cost(states, actions)
         costs.append(cost)
     plt.plot(costs)
 
-    ### SAMPLE COUNT 5 ###
-    predictive_sampler = PredictiveSampler(horizon=200, sample_variance=1.0, dt=0.01, sample_count=5)
-    state = np.array(
-        [0.0, 0.0, np.pi, 0.0]
-    )  # [x_pos,.0 x_dot, theta, theta_dot] in env state space, pendulum straight up
-    # Convert to [pos, pos_dot, np.cos(theta), np.sin(theta), theta_dot]
-    state_cartpole = np.array(
-        [state[0], state[1], np.cos(state[2]), np.sin(state[2]), state[3]]
-    )  # in env state space
-    iterations = 300
-    # Plot the the theta trajectory at each iteration
-    costs = []
-    for i in range(iterations):
-        predictive_sampler.predict(state_cartpole)
-        states = predictive_sampler.states[predictive_sampler.best_index]
-        actions = predictive_sampler.action_trajs[predictive_sampler.best_index]
-        cost = predictive_sampler.evaluator.total_trajectory_cost(states, actions)
-        costs.append(cost)
-    plt.plot(costs)
-
-    ### SAMPLE COUNT 7 ###
-    predictive_sampler = PredictiveSampler(horizon=200, sample_variance=0.01, dt=0.01, sample_count=7)
-    state = np.array(
-        [0.0, 0.0, np.pi, 0.0]
-    )  # [x_pos,.0 x_dot, theta, theta_dot] in env state space, pendulum straight up
-    # Convert to [pos, pos_dot, np.cos(theta), np.sin(theta), theta_dot]
-    state_cartpole = np.array(
-        [state[0], state[1], np.cos(state[2]), np.sin(state[2]), state[3]]
-    )  # in env state space
-    iterations = 300
-    # Plot the the theta trajectory at each iteration
-    costs = []
-    for i in range(iterations):
-        predictive_sampler.predict(state_cartpole)
-        states = predictive_sampler.states[predictive_sampler.best_index]
-        actions = predictive_sampler.action_trajs[predictive_sampler.best_index]
-        cost = predictive_sampler.evaluator.total_trajectory_cost(states, actions)
-        costs.append(cost)
-    plt.plot(costs)
-
-    
     # Legend
     #plt.legend(["Baseline variance: 0.1", "Variance 1", "Variance 0.01"])
-    plt.legend(["Baseline, sample count: 10", "Sample count: 5", "Sample count: 7"])
-
+    plt.legend(["Baseline, sample count: 10"])
 
     plt.title("Predictive sampling")
     plt.xlabel("Iteration")

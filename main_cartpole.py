@@ -13,7 +13,7 @@ done = False
 
 obs = env.reset()
 env.render()
-sim_steps = 200
+sim_steps = 1000
 
 predictive_sampler = PredictiveSampler(horizon=100, dt=0.01, sample_variance=0.1)
 mpc_visualizer = MPCVisualizer(predictive_sampler, sim_steps)

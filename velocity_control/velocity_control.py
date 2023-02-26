@@ -28,8 +28,7 @@ def pendulum_derivatives(state, desired_vel, L=1, g=9.81):
 
     Returns
     -------
-    tuple
-        A tuple containing the derivatives of theta and omega at time t.
+    [x_dot, x_ddot, theta_dot, theta_ddot] : list
     """
     T_v = 0.01
     x_ddot = 1 / T_v * (desired_vel - state.x_dot)
